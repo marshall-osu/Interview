@@ -1,0 +1,24 @@
+{
+  "name": "interview",
+  "version": "1.0.0",
+  "description": "Thank you for your interest in joining the MAPSYS team.  As a Software Developer at MAPSYS, your role will be to provide full-stack web development consulting to a wide variety of public and private sector customers, working on internal and public facing applications.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marshall-osu/Interview.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/marshall-osu/Interview/issues"
+  },
+  "homepage": "https://github.com/marshall-osu/Interview#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "sqlite3": "^5.0.0"
+  }
+}
