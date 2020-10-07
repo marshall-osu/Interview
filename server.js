@@ -112,8 +112,7 @@ app.post('/', function(req, res){
                 fs.mkdirSync(`.\\public\\Docs\\${fields.category}`)
             }
 
-            //Source : https://stackabuse.com/handling-file-uploads-in-node-js-with-expres-and-multer/ 
-            //From here:
+            //Source : https://stackoverflow.com/questions/37153666/error-exdev-cross-device-link-not-permitted-rename-tmp-on-ubuntu-16-04-lts
             fs.readFile(oldpath, function (err, data) {
                 if (err) throw err;
                 console.log('File read!');
