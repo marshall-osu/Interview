@@ -23,8 +23,12 @@ const { report } = require('process');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
 //setting up everything else
-app.use(cookie('keyboard cat'));
-app.use(session({ cookie: { maxAge: 60000}}));
+app.use(cookie('p1a2s3s4w5o6r7d8'));
+app.use(session({
+    secret: 'p1a2s3s4w5o6r7d8',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 60000}}));
 app.use(flash());
 app.use(methodOverride('_method'))
 app.set('port', (process.env.PORT || 5000));
@@ -110,18 +114,30 @@ app.post('/', function(req, res){
 
             //Source : https://stackabuse.com/handling-file-uploads-in-node-js-with-expres-and-multer/ 
             //From here:
-            fs.rename(oldpath, newpath, function (err) {
+            fs.readFile(oldpath, function (err, data) {
                 if (err) throw err;
-                
-                console.log('POST request recieved at /files');
-                //send file deal with it on the insert
-                db.run('INSERT INTO files VALUES (?,?,?)', [fields.filename, htmlpath, fields.category], function(err){
-                if(err){
-                    console.log("Error: " + err);
-                } else {
-                    rewrite();
-                }
+                console.log('File read!');
+    
+                // Write the file
+                fs.writeFile(newpath, data, function (err) {
+                    if (err) throw err;
+                    console.log('File written!');
                 });
+
+                db.run('INSERT INTO files VALUES (?,?,?)', [fields.filename, htmlpath, fields.category], function(err){
+                    if(err){
+                        console.log("Error: " + err);
+                    } else {
+                        rewrite();
+                    }
+                });
+    
+                // Delete the file
+                fs.unlink(oldpath, function (err) {
+                    if (err) throw err;
+                    console.log('File deleted!');
+                });
+
                 req.flash('success', 'File successfully uploaded');
                 res.redirect('/');
             });
