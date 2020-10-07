@@ -5,10 +5,10 @@ The goal of this Interview Application Assignment is to evaluate your technical 
 1. Please use the files in this repository
 2. Application should:
    - [x] Be a web Application
-   - [ ] Display documents listed in the “Interview\Documents.csv” file
+   - [x] Display documents listed in the “Interview\Documents.csv” file
    - [x] Allow user to click on a link to view the document
-   - [ ] Allow user to upload new document, and update Documents.csv file
-   - [ ] Allow user to delete an existing document, and update Documents.csv
+   - [x] Allow user to upload new document, and update Documents.csv file
+   - [x] Allow user to delete an existing document, and update Documents.csv
 3. You may use any language that you prefer for the application.
 4. There is no predefined time limit for this assignment, though it is helpful if you track your own hours.
 5. Please feel free to contact jhayford@mapsysinc.com or mpayne@mapsysinc.com with any questions.

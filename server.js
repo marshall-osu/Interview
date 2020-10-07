@@ -2,15 +2,21 @@ var methodOverride = require('method-override');
 var formidable = require('formidable');
 var path = require('path');
 var express = require('express');
+var cookie = require('cookie-parser');
+var session = require('express-session');
+const flash = require('express-flash');
 var app = express();
 var sqlite3 = require('sqlite3');
 var db = new sqlite3.Database('Db/files.db');
 var helpers = require('./helpers');
 var csv = require('fast-csv');
 var fs = require('fs');
+const { report } = require('process');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
-
+app.use(cookie('keyboard cat'));
+app.use(session({ cookie: { maxAge: 60000}}));
+app.use(flash());
 app.use(methodOverride('_method'))
 app.set('port', (process.env.PORT || 5000));
 app.use(express.static(__dirname + '/public'));
@@ -38,18 +44,18 @@ const rewrite = function(){
 }
 
 let counter = 0;
-let csvStream = csv.parseFile("./Documents.csv", { headers: true })
+let csvStream = csv.parseFile("Documents.csv", { headers: true })
     .on("data", function(record){
         csvStream.pause();
         db.all('SELECT * FROM files WHERE name = ? AND path = ? AND category = ?', [record.Name, record.Path, record.Category], function(err, rows){
-            if(!rows){
+            if(rows.length == 0){
                 db.run('INSERT INTO files VALUES (?,?,?)', [record.Name, record.Path, record.Category]);
             }
             if(err){
                 console.log('Error: ' + err);
             }
+            console.log(record.Name + ", " + record.Path + ", " + record.Category);
         })
-        
         csvStream.resume();
     })
 
@@ -69,7 +75,7 @@ app.listen(app.get('port'), function(){
 
 app.get('/files', function(request, response){
     console.log('GET request recieved at /files');
-    db.all('SELECT * FROM files', function(err, rows){
+    db.all('SELECT * FROM files ORDER BY name', function(err, rows){
         if(err){
             console.log('Error: ', err);
         } else {
@@ -82,18 +88,16 @@ app.get('/files', function(request, response){
 app.post('/', function(req, res){
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, fields, files) {
-        db.all('SELECT * FROM files WHERE name = ?', [fields.filename], function(err, rows){
+        db.all('SELECT * FROM files WHERE path = ?', [`.\\Docs\\${files.file.name}`], function(err, rows){
             if(rows.length == 0) {
             var oldpath = files.file.path;
-            var newpath = `\\public\\Docs\\${files.file.name}`;
-            var htmlpath = `\\Docs\\${files.file.name}`;
+            var newpath = `.\\public\\Docs\\${files.file.name}`;
+            var htmlpath = `.\\Docs\\${files.file.name}`;
            
             //Source : https://stackabuse.com/handling-file-uploads-in-node-js-with-expres-and-multer/ 
             //From here:
             fs.rename(oldpath, newpath, function (err) {
                 if (err) throw err;
-                res.send(`<p>You have uploaded this file: ${files.file.name}<p><a href="./">Homepage</a>`);
-                //To here
                 
                 console.log('POST request recieved at /files');
                 //send file deal with it on the insert
@@ -104,22 +108,25 @@ app.post('/', function(req, res){
                     rewrite();
                 }
                 });
+                req.flash('success', 'File successfully uploaded');
+                res.redirect('/');
             });
             } else {
-                res.send(`<p>You already have a file with this name: ${fields.filename}, please pick a different name<p><a href="./">Homepage</a>`);
+                req.flash('failure', 'Error uploading file!');
+                res.redirect('/');
             } 
         });
     });   
 });
 
 app.delete('/', function(req, res){
-    db.all('SELECT * FROM files WHERE name = ?', [req.query.name], function(err, rows){
+    db.all('SELECT * FROM files WHERE path = ?', [req.query.path], function(err, rows){
         if(err){
             console.log('Error: ' + err);
         }
         if(rows.length > 0){
             console.log('DELETE request recieved at /files')
-            db.run('DELETE FROM files WHERE name = ?', [req.query.name]), function(err){
+            db.run('DELETE FROM files WHERE path = ?', [req.query.path]), function(err){
                 if(err){
                   console.log("Error: " + err);
                 }
@@ -130,9 +137,11 @@ app.delete('/', function(req, res){
                     console.log("Error: "+ err);
                 }
             })
-            res.redirect(303, "./");
+            req.flash('success', 'File successfully deleted');
+            res.redirect('/');
         } else {
-            res.send("Didn't work try again, i =" + request.query.name + ", rows = " + rows);
+            req.flash('failure', 'Error deleting file!');
+            res.redirect('/');
         }
     })
     
