@@ -1,19 +1,28 @@
-var methodOverride = require('method-override');
-var formidable = require('formidable');
-var path = require('path');
-var express = require('express');
-var cookie = require('cookie-parser');
-var session = require('express-session');
+//delete from html form
+const methodOverride = require('method-override');
+//file reading
+const formidable = require('formidable');
+const path = require('path');
+//express
+const express = require('express');
+const app = express();
+//using flash messages
+const cookie = require('cookie-parser');
+const session = require('express-session');
 const flash = require('express-flash');
-var app = express();
-var sqlite3 = require('sqlite3');
-var db = new sqlite3.Database('Db/files.db');
-var helpers = require('./helpers');
-var csv = require('fast-csv');
-var fs = require('fs');
+//sqlite database
+const sqlite3 = require('sqlite3');
+const db = new sqlite3.Database('Db/files.db');
+//helper methods (sourced)
+const helpers = require('./helpers');
+//csv editing
+const csv = require('fast-csv');
+//general file editing
+const fs = require('fs');
 const { report } = require('process');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
+//setting up everything else
 app.use(cookie('keyboard cat'));
 app.use(session({ cookie: { maxAge: 60000}}));
 app.use(flash());
@@ -24,6 +33,7 @@ app.set('views', __dirname + '/public');
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 
+//writes to csv for updates
 const rewrite = function(){
     const csvWriter = createCsvWriter({
         path: 'Documents.csv',
@@ -43,6 +53,7 @@ const rewrite = function(){
     
 }
 
+//reads in csv and puts anything not into the database into it
 let counter = 0;
 let csvStream = csv.parseFile("Documents.csv", { headers: true })
     .on("data", function(record){
@@ -59,7 +70,7 @@ let csvStream = csv.parseFile("Documents.csv", { headers: true })
         csvStream.resume();
     })
 
-    // routes
+// routes
 
 app.get('/', function (request, response){
     response.render('File-Viewer.html');
@@ -88,12 +99,15 @@ app.get('/files', function(request, response){
 app.post('/', function(req, res){
     var form = new formidable.IncomingForm();
     form.parse(req, function (err, fields, files) {
-        db.all('SELECT * FROM files WHERE path = ?', [`.\\Docs\\${files.file.name}`], function(err, rows){
+        db.all('SELECT * FROM files WHERE path = ?', [`.\\Docs\\${fields.category}\\${files.file.name}`], function(err, rows){
             if(rows.length == 0) {
             var oldpath = files.file.path;
-            var newpath = `.\\public\\Docs\\${files.file.name}`;
-            var htmlpath = `.\\Docs\\${files.file.name}`;
-           
+            var newpath = `.\\public\\Docs\\${fields.category}\\${files.file.name}`;
+            var htmlpath = `.\\Docs\\${fields.category}\\${files.file.name}`;
+            if(!fs.existsSync(`.\\public\\Docs\\${fields.category}`)){
+                fs.mkdirSync(`.\\public\\Docs\\${fields.category}`)
+            }
+
             //Source : https://stackabuse.com/handling-file-uploads-in-node-js-with-expres-and-multer/ 
             //From here:
             fs.rename(oldpath, newpath, function (err) {
@@ -137,6 +151,10 @@ app.delete('/', function(req, res){
                     console.log("Error: "+ err);
                 }
             })
+            var folder = `public\\Docs\\${rows[0].category}`;
+            if(fs.readdirSync(folder).length == 0){
+                fs.rmdirSync(folder);
+            }
             req.flash('success', 'File successfully deleted');
             res.redirect('/');
         } else {
